@@ -78,6 +78,30 @@ func (self *Client) Get(url string) (*http.Response, error) {
 	}
 }
 
+func (self *Client) GetBytes(url string) ([]byte, error) {
+	resp, err := self.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	var reader io.Reader = resp.Body
+	if self.Encoding != "utf-8" {
+		buf := new(bytes.Buffer)
+		io.Copy(buf, resp.Body)
+		runes, err := From(self.Encoding, buf.Bytes())
+		if err != nil {
+			return nil, err
+		}
+		reader = bytes.NewReader([]byte(string(runes)))
+	}
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, reader)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body.Close()
+	return buf.Bytes(), nil
+}
+
 func (self *Client) GetDoc(url string) (*goquery.Document, error) {
 	resp, err := self.Get(url)
 	if err != nil {
